@@ -1,13 +1,12 @@
 package com.example.dylan.module.greendao;
 
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
-import com.example.dylan.module.entity.DaoMaster;
-import com.example.dylan.module.entity.DaoSession;
+import com.example.dylan.module.dao.DaoMaster;
+import com.example.dylan.module.dao.DaoSession;
 
 import org.greenrobot.greendao.AbstractDao;
 import org.greenrobot.greendao.query.Query;
@@ -25,25 +24,34 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     /**
      * The Android Activity reference for access to DatabaseManager.
      */
-    private static DaoMaster.DevOpenHelper mHelper;
-    protected static DaoSession mDaoSession;
+    private DaoMaster.DevOpenHelper mHelper;
+    protected DaoSession mDaoSession;
 
-    public static void initOpenHelper(@NonNull Context context) {
+    public AbstractDatabaseManager(@NonNull Context context) {
+        String databaseName = getDatabaseName();
+        if (TextUtils.isEmpty(databaseName)) {
+            devOpenHelper(context);
+        } else {
+            devOpenHelper(context, databaseName);
+        }
+    }
+
+    public void devOpenHelper(@NonNull Context context) {
         mHelper = getOpenHelper(context, DEFAULT_DATABASE_NAME);
-        openWriteableDb();
+        openReadableDb();
     }
 
-    public static void initOpenHelper(@NonNull Context context, @NonNull String dataBaseName) {
+    public void devOpenHelper(@NonNull Context context, @NonNull String dataBaseName) {
         mHelper = getOpenHelper(context, dataBaseName);
-        openWriteableDb();
+        openReadableDb();
     }
 
-    private static DaoMaster.DevOpenHelper getOpenHelper(@NonNull Context context, @NonNull String dataBaseName) {
+    private DaoMaster.DevOpenHelper getOpenHelper(@NonNull Context context, @NonNull String dataBaseName) {
         closeDbConnections();
         return new DaoMaster.DevOpenHelper(context, dataBaseName, null);
     }
 
-    private static void closeDbConnections() {
+    private void closeDbConnections() {
         if (mHelper != null) {
             mHelper.close();
             mHelper = null;
@@ -55,31 +63,23 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
         }
     }
 
-    private static SQLiteDatabase getReadableDataBase() {
-        return mHelper.getReadableDatabase();
+    protected void openReadableDb() {
+        mDaoSession = new DaoMaster(mHelper.getReadableDatabase()).newSession();
     }
 
-    protected static void openReadableDb() {
-        mDaoSession = new DaoMaster(getReadableDataBase()).newSession();
-    }
-
-    private static SQLiteDatabase getWriteableDataBase() {
-        return mHelper.getWritableDatabase();
-    }
-
-    protected static void openWriteableDb() {
-        mDaoSession = new DaoMaster(getWriteableDataBase()).newSession();
+    protected void openWriteableDb() {
+        mDaoSession = new DaoMaster(mHelper.getWritableDatabase()).newSession();
     }
 
     @Override
     public boolean insert(M m) {
         try {
             if (m != null) {
-                openWriteableDb();
                 getAbstractDao().insert(m);
                 return true;
             }
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
     }
@@ -88,11 +88,11 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     public boolean insertList(List<M> list) {
         try {
             if (list != null && list.size() > 0) {
-                openWriteableDb();
                 getAbstractDao().insertInTx(list);
                 return true;
             }
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
     }
@@ -101,11 +101,11 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     public boolean insertOrReplace(@NonNull M m) {
         try {
             if (m != null) {
-                openWriteableDb();
                 getAbstractDao().insertOrReplace(m);
                 return true;
             }
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
     }
@@ -114,11 +114,11 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     public boolean insertOrReplaceList(List<M> list) {
         try {
             if (list != null && list.size() > 0) {
-                openWriteableDb();
                 getAbstractDao().insertOrReplaceInTx(list);
                 return true;
             }
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
     }
@@ -127,11 +127,11 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     public boolean delete(M m) {
         try {
             if (m != null) {
-                openWriteableDb();
                 getAbstractDao().delete(m);
                 return true;
             }
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
     }
@@ -140,11 +140,11 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     public boolean deleteByKey(K k) {
         try {
             if (TextUtils.isEmpty(k.toString())) {
-                openWriteableDb();
                 getAbstractDao().deleteByKey(k);
                 return true;
             }
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
     }
@@ -153,11 +153,11 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     public boolean deleteList(List<M> list) {
         try {
             if (list != null && list.size() > 0) {
-                openWriteableDb();
                 getAbstractDao().deleteInTx(list);
                 return true;
             }
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
     }
@@ -165,10 +165,10 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     @Override
     public boolean deleteAll() {
         try {
-            openWriteableDb();
             getAbstractDao().deleteAll();
             return true;
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
     }
@@ -177,11 +177,11 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     public boolean update(M m) {
         try {
             if (m != null) {
-                openWriteableDb();
                 getAbstractDao().update(m);
                 return true;
             }
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
     }
@@ -190,11 +190,11 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     public boolean updateList(List<M> list) {
         try {
             if (list != null && list.size() > 0) {
-                openWriteableDb();
                 getAbstractDao().updateInTx(list);
                 return true;
             }
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
     }
@@ -202,9 +202,9 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     @Override
     public M load(K key) {
         try {
-            openReadableDb();
             return getAbstractDao().load(key);
         } catch (SQLiteException e) {
+            log(e);
         }
         return null;
     }
@@ -212,9 +212,9 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     @Override
     public List<M> loadAll() {
         try {
-            openReadableDb();
             return getAbstractDao().loadAll();
         } catch (SQLiteException e) {
+            log(e);
         }
         return null;
     }
@@ -222,9 +222,9 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     @Override
     public List<M> queryRaw(String where, String... selectionArg) {
         try {
-            openReadableDb();
             return getAbstractDao().queryRaw(where, selectionArg);
         } catch (SQLiteException e) {
+            log(e);
         }
         return null;
     }
@@ -232,9 +232,9 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     @Override
     public Query<M> queryRawCreate(String where, Object... selectionArg) {
         try {
-            openReadableDb();
             return getAbstractDao().queryRawCreate(where, selectionArg);
         } catch (SQLiteException e) {
+            log(e);
         }
         return null;
     }
@@ -242,20 +242,21 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     @Override
     public Query<M> queryRawCreateListArgs(String where, Collection<Object> selectionArg) {
         try {
-            openReadableDb();
             return getAbstractDao().queryRawCreateListArgs(where, selectionArg);
         } catch (SQLiteException e) {
+            log(e);
         }
         return null;
     }
 
     @Override
     public QueryBuilder<M> getQueryBuilder() {
-        openReadableDb();
         return getAbstractDao().queryBuilder();
     }
 
     public abstract AbstractDao<M, K> getAbstractDao();
+
+    public abstract String getDatabaseName();
 
     @Override
     public void clearDaoSession() {
@@ -268,11 +269,15 @@ public abstract class AbstractDatabaseManager<M, K> implements IDatabase<M, K> {
     @Override
     public boolean dropDatabase() {
         try {
-            openWriteableDb();
             DaoMaster.dropAllTables(mDaoSession.getDatabase(), false);
             return true;
         } catch (SQLiteException e) {
+            log(e);
         }
         return false;
+    }
+
+    private static void log(SQLiteException e) {
+        e.printStackTrace();
     }
 }

@@ -18,7 +18,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
+    greendao {
+        schemaVersion 1
+        daoPackage 'com.example.dylan.module.dao'
+        targetGenDir 'src/main/java'
+    }
 }
 
 dependencies {
@@ -31,8 +35,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
 
     //greendao
-    compile 'org.greenrobot:greendao-generator:3.2.2'
-    compile 'org.greenrobot:greendao-api:3.2.2'
-    compile 'org.greenrobot:greendao-api:3.2.2'
-    compile 'org.greenrobot:greendao:3.2.2'
+    compile 'org.greenrobot:greendao:3.1.0'
 }
